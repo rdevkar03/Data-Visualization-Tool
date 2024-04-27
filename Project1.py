@@ -8,8 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import datetime as dt
-from PIL import Image,ImageGrab
-import tkinter.font as tf
+import tkinter.font as tf          
 
 global fields
 
@@ -23,13 +22,12 @@ def read_excel():
     try:
         data=pd.read_excel(File)                         
         messagebox.showinfo("Load","Data Load Successfully")
-        fields=list(data.columns)        
-        print(fields)
-        
-       
+        fields=list(data.columns)   
+        if data.isna().values.any():
+            data=data.dropna(None)
+         
     except Exception as e:
         messagebox.showinfo("fail","!! failed to load")
-
 
     display_values=list(fields)
     combobox1.config(values=display_values)
@@ -40,7 +38,9 @@ window.title("Data Visualization Dashboard")
 window.state('zoomed')
 window.config(bg="#C0C0C0")
 
-tf_font=tf.Font(family="Helvetica",size="15")
+tf_font=tf.Font(family="Times New Roman",size="15",weight='bold')
+tf_label=tf.Font(family="Times New Roman",size="22",weight='bold',slant='italic')
+tf_sub=tf.Font(family="Times New Roman",size="15",weight='bold')
 
 side_frame=tk.Frame(window)
 side_frame.pack(side="left",fill="y")
@@ -54,12 +54,11 @@ upper_frame.pack(fill="both",expand=True)
 lower_frame=tk.Frame(charts_frame)
 lower_frame.pack(fill="both",expand=True)
 
-
 canvas=tk.Canvas(side_frame,width=200,height=1000)
 canvas.pack()
 
-start_color="#C33764"
-end_color="#1D2671"
+start_color="#d32e77"
+end_color="#002387"
 
 def gradient(canvas,x1,y1,x2,y2,color1,color2):
     canvas.create_rectangle(x1,y1,x2,y2,fill=color1,outline=color1)
@@ -76,17 +75,18 @@ def openfile():
     filepath=fd.askopenfilename(initialdir="D:\\",filetypes=[("all files","*.*"),("Excel Files","*.xlsx")])
     txt.insert(0.0,filepath)    
 
-lblx=tk.Label(side_frame,text="X-axis",fg="black",font=8,bg="lightblue" )
-lblx.place(x=10,y=200)
+lblx=tk.Label(side_frame,text="X-axis",fg="black",font=tf_sub,bg="lightblue" ,width=8)
+lblx.place(x=10,y=210)
 
-lblx=tk.Label(side_frame,text="Y-axis",fg="black",font=8,bg="lightblue")
-lblx.place(x=10,y=235)
+lblx=tk.Label(side_frame,text="Y-axis",fg="black",font=tf_sub,bg="lightblue",width=8)
+lblx.place(x=10,y=265)
 
-combobox1=ttk.Combobox(side_frame,width=15)
-combobox1.place(x=80,y=207)
+combobox1=ttk.Combobox(side_frame,width=20)
+combobox1.place(x=10,y=235)
 
-combobox2=ttk.Combobox(side_frame,width=15)
-combobox2.place(x=80,y=238)
+combobox2=ttk.Combobox(side_frame,width=20)
+combobox2.place(x=10,y=290)
+side_frame_color=side_frame.cget("bg")
 def option_selected(event):
     global fields
     global selected_option1
@@ -101,19 +101,18 @@ def option_selected(event):
     print(type(selected_option2))
 combobox2.bind("<<ComboboxSelected>>", option_selected)
 
-lbl=tk.Label(side_frame,text="Dashboard",font=40,fg="Black")
-lbl.place(x=42,y=15)
-btn_insert=tk.Button(side_frame,text="Browse...",fg="black",font=2,width=10,command=openfile)
+lbl=tk.Label(side_frame,text="Dashboard!!",font=tf_label,fg="White",bg="#d32e77")
+lbl.place(x=25,y=12)
+btn_insert=tk.Button(side_frame,text="Browse...",fg="black",font=tf_sub,width=9,command=openfile)
 btn_insert.place(x=15,y=100)
 
-txt=tk.Text(side_frame,height=0.5,width=18)
-txt.place(x=24,y=76)
+txt=tk.Text(side_frame,height=0.7,width=20)
+txt.place(x=10,y=76)
 
-btn_load=tk.Button(side_frame,text="Load",fg="black",font=5,width=10,command=read_excel)
+btn_load=tk.Button(side_frame,text="Load",font=tf_sub,width=9,command=read_excel)
 btn_load.place(x=15,y=148)
 
-fig,axes1=plt.subplots(2,3,figsize=(10,6))
-fig.subplots_adjust(wspace=1.5, hspace=1.5)
+fig,axes1=plt.subplots(2,3,figsize=(12,6))
 fig.tight_layout(rect=[0, 0.09, 1, 0.99], w_pad=0.8, h_pad=1.2)
 canvas1=FigureCanvasTkAgg(fig,master=window)
 canvas1.get_tk_widget().pack(side="right",fill="both",expand=True)
@@ -131,20 +130,28 @@ def bar():
     print(type(y_axis))
     g_data=data.groupby(selected_option1)[selected_option2].sum()
     axes1[0][0].bar(g_data.index,g_data.values)
-    for bar in axes1[0][0].containers[0]:
-        value_in_lakhs = round(bar.get_height() / 1000, 2)
-        axes1[0][0].text(bar.get_x() + bar.get_width() / 2, bar.get_height(), f'{value_in_lakhs:.2f}k', ha='center')
-        
+    for i, bar in enumerate(axes1[0][0].containers[0]):
+        value = bar.get_height()
+        if value > 100000:
+            value_in_lakhs = round(value / 100000, 2)
+            axes1[0][0].text(bar.get_x() + bar.get_width() / 2, bar.get_height(), f'{value_in_lakhs:.2f}L', ha='center')
+            bar.set_height(value_in_lakhs * 100000)
+
+        else:
+            value_in_k = round(value / 1000, 2)
+            axes1[0][0].text(bar.get_x() + bar.get_width() / 2, bar.get_height(), f'{value_in_k:.2f}k', ha='center')
+            bar.set_height(value_in_k * 1000)
     axes1[0][0].set_xlabel(selected_option1)
     axes1[0][0].set_ylabel(selected_option2)
     tit=selected_option1 +" by "+ selected_option2
     axes1[0][0].set_title(tit)
+    fig.subplots_adjust(wspace=0.4, hspace=0.3)
+    
        
     canvas1.draw()
-    
-    
+        
 btn_bar=tk.Button(side_frame,text="Bar Chart",fg="black",font=tf_font,width=10,command=bar)
-btn_bar.place(x=15,y=300)
+btn_bar.place(x=15,y=350)
 
 def area():
     global data
@@ -159,10 +166,11 @@ def area():
     axes1[0][1].set_ylabel(selected_option2)
     tit = selected_option1 + " by " + selected_option2
     axes1[0][1].set_title(tit)
+    fig.subplots_adjust(wspace=0.4, hspace=0.3)
     canvas1.draw()
     
 btn_area=tk.Button(side_frame,text="Area Chart",fg="Black",font=tf_font,width=10,command=area)
-btn_area.place(x=15,y=350)
+btn_area.place(x=15,y=400)
 
 def pie():
     global sumdata   
@@ -172,12 +180,17 @@ def pie():
     g_data=data.groupby(selected_option1)[selected_option2].sum()
     x=data.groupby(selected_option1).count()
     totals = data.groupby(selected_option1)[selected_option2].sum().tolist()
-    total=[]
+    total=list()
+    new_labels = []
     for i in totals:
-        total=total+[i/1000]
+        if i < 100000:
+            total.append(i/1000)
+            new_labels.append(f'{total[-1]:.2f}K')
+        else:
+            total.append(i/100000)
+            new_labels.append(f'{total[-1]:.2f}L')
     Labels=list(x.index)
     print(total)
-    new_labels = [f'{total:.2f}k' for total in total]
 
     axes1[0][2].pie(g_data,labels=new_labels,autopct='%1.1f%%',startangle=0)
     axes1[0][2].axis('equal')
@@ -185,10 +198,11 @@ def pie():
     axes1[0][2].legend(title="legend",labels=Labels,loc="upper left")
     tit=selected_option1 + " by " + selected_option2
     axes1[0][2].set_title(tit)
+    fig.subplots_adjust(wspace=0.4, hspace=0.3)
     canvas1.draw()
     
 btn_pie=tk.Button(side_frame,text="Pie chart",fg="Black",font=tf_font,width=10,command=pie)
-btn_pie.place(x=15,y=400) 
+btn_pie.place(x=15,y=450) 
 
 def line():
     global data
@@ -209,48 +223,53 @@ def line():
     axes1[1][1].set_ylabel(selected_option2)
     tit=selected_option1  +" by "+  selected_option2
     axes1[1][1].set_title(tit)
+    fig.subplots_adjust(wspace=0.4, hspace=0.3)
     
     canvas1.draw()
 btn_line=tk.Button(side_frame,text="Line Chart",fg="black",font=tf_font,width=10,command=line)
-btn_line.place(x=15,y=450)
+btn_line.place(x=15,y=500)
 
 def scatter():
     global selected_option2
     global selected_option1
     g_data=data.groupby(selected_option1)[selected_option2].sum()
-    axes1[1][2].clear()
-    axes1[1][2].scatter(g_data.index,g_data.values)
-    axes1[1][2].set_xlabel(selected_option1)
-    axes1[1][2].set_ylabel(selected_option2)
+    axes1[1][0].clear()
+    axes1[1][0].scatter(g_data.index,g_data.values)
+    axes1[1][0].set_xlabel(selected_option1)
+    axes1[1][0].set_ylabel(selected_option2)
     tit=selected_option1  +" by "+  selected_option2
-    axes1[1][2].set_title(tit)
+    axes1[1][0].set_title(tit)
+    fig.subplots_adjust(wspace=0.4, hspace=0.3)
     canvas1.draw()
 btn_scatter=tk.Button(side_frame,text="Scatter plot",fg="black",font=tf_font,width=10,command=scatter)
-btn_scatter.place(x=15,y=500)
+btn_scatter.place(x=15,y=550)
 
 def barh():
     global data
     global selected_option1
     global selected_option2
-    axes1[1][0].clear()
+    axes1[1][2].clear()
     x_axis=data[selected_option1]
     y_axis=data[selected_option2]
-    print(x_axis)
-    print(y_axis)
-    print(type(x_axis))
-    print(type(y_axis))
-    g_data=data.groupby(selected_option1)[selected_option2].sum()
-    axes1[1][0].barh(g_data.index,g_data.values)    
-    axes1[1][0].set_xlabel(selected_option2)
-    axes1[1][0].set_ylabel(selected_option1)
-    tit=selected_option1 +" by "+ selected_option2
-    axes1[1][0].set_title(tit)
     
+    g_data=data.groupby(selected_option1)[selected_option2].sum()
+    axes1[1][2].barh(g_data.index,g_data.values)  
+    for i, v in enumerate(g_data.values):
+        if v > 100000:
+            axes1[1][2].text(v + 3, i, f'{v/100000:.2f}L', ha='left')
+        else:
+            axes1[1][2].text(v + 3, i, f'{v/1000:.2f}k', ha='left')
+
+    axes1[1][2].set_xlabel(selected_option2)
+    axes1[1][2].set_ylabel(selected_option1)
+    tit=selected_option1 +" by "+ selected_option2
+    axes1[1][2].set_title(tit)
+    fig.subplots_adjust(wspace=0.4, hspace=0.3)
        
     canvas1.draw()
     
 btn_bar=tk.Button(side_frame,text="Bar-H-chart",fg="black",font=tf_font,width=10,command=barh)
-btn_bar.place(x=15,y=550)
+btn_bar.place(x=15,y=600)
 
 def clear():
     global axes1
@@ -263,7 +282,7 @@ def clear():
     axes1[1][2].clear()
     canvas1.draw()
     
-btn_clea=tk.Button(side_frame,text="Clear",fg="black",width=10,font=tf_font,command=clear)
+btn_clea=tk.Button(side_frame,text="Clear",fg="White",bg="#D0312D",width=10,font=tf_font,command=clear)
 btn_clea.place(x=15,y=850)
 
 def save():
@@ -274,12 +293,7 @@ def save():
         plt.savefig(file+".pdf")
 
     messagebox.showinfo("Download","Download Successful")
-btn_save=tk.Button(side_frame,text="Download",fg="black",font=5,width=10,command=save)
+btn_save=tk.Button(side_frame,text="Download",fg="White",font=tf_font,width=10,bg="#008631",command=save)
 btn_save.place(x=15,y=900)
 
 window.mainloop()
-
-
-
-
-
